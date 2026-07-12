@@ -1,0 +1,37 @@
+# ==========================
+# Terraform
+# ==========================
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Keep lock file (recommended for teams)
+# !.terraform.lock.hcl
+
+# ==========================
+# IDE
+# ==========================
+.vscode/
+.idea/
+
+# ==========================
+# Logs
+# ==========================
+*.log
+
+# ==========================
+# Environment Variables
+# ==========================
+.env
+.env.*
+
+# ==========================
+# Operating System
+# ==========================
+.DS_Store
+Thumbs.db

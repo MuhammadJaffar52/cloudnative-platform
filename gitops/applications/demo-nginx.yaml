@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+
+metadata:
+  name: demo-nginx
+  namespace: argocd
+
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/MuhammadJaffar52/cloudnative-platform.git
+    targetRevision: main
+    path: kubernetes/base/demo-nginx
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: demo
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+    syncOptions:
+      - CreateNamespace=true
