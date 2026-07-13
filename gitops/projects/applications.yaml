@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+
+metadata:
+  name: applications
+  namespace: argocd
+
+spec:
+  description: Application Team Workloads
+
+  sourceRepos:
+    - "https://github.com/MuhammadJaffar52/cloudnative-platform.git"
+
+  destinations:
+    - namespace: demo
+      server: https://kubernetes.default.svc
+
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"

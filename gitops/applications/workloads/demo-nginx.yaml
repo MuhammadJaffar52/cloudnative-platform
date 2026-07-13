@@ -6,7 +6,7 @@ metadata:
   namespace: argocd
 
 spec:
-  project: platform
+  project: applications
 
   source:
     repoURL: https://github.com/MuhammadJaffar52/cloudnative-platform.git
