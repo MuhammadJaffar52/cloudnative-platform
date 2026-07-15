@@ -10,7 +10,7 @@ spec:
 
   source:
     repoURL: https://github.com/MuhammadJaffar52/cloudnative-platform.git
-    targetRevision: HEAD
+    targetRevision: main
     path: kubernetes/overlays/local
 
   destination:
