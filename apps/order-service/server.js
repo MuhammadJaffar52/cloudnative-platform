@@ -2,7 +2,7 @@ import express from 'express'
 import axios from 'axios'
 
 const app = express()
-const PORT = process.env.PORT || 3004
+const PORT = process.env.PORT || 3003
 
 const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:3001'
 const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL || 'http://localhost:3002'
