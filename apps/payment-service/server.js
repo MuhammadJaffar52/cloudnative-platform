@@ -4,7 +4,7 @@ import helmet from 'helmet'
 import morgan from 'morgan'
 
 const app = express()
-const PORT = process.env.PORT || 3003
+const PORT = process.env.PORT || 3004
 
 app.use(helmet())
 app.use(cors())
