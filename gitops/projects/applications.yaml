@@ -6,19 +6,27 @@ metadata:
   namespace: argocd
 
 spec:
-  description: Application Team Workloads
+  description: Application Workloads Project
 
+  # Allow applications from any Git repository
   sourceRepos:
-    - "https://github.com/MuhammadJaffar52/cloudnative-platform.git"
+    - '*'
 
+  # Allow deployment to any namespace in the local cluster
   destinations:
-    - namespace: "*"
+    - namespace: '*'
       server: https://kubernetes.default.svc
 
-  clusterResourceWhitelist:
-    - group: "*"
-      kind: "*"
-
+  # Allow all namespace-scoped resources
   namespaceResourceWhitelist:
-    - group: "*"
-      kind: "*"
+    - group: '*'
+      kind: '*'
+
+  # Allow all cluster-scoped resources
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+
+  # No orphaned resource warnings
+  orphanedResources:
+    warn: false
