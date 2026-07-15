@@ -12,7 +12,7 @@ spec:
     - "https://github.com/MuhammadJaffar52/cloudnative-platform.git"
 
   destinations:
-    - namespace: demo
+    - namespace: "*"
       server: https://kubernetes.default.svc
 
   clusterResourceWhitelist:
