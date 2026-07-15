@@ -1,0 +1,17 @@
+{
+  "name": "payment-service",
+  "version": "1.0.0",
+  "description": "Payment Service - Handles payment processing",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0"
+  }
+}

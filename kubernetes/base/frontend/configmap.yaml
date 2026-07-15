@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: frontend-config
+  namespace: microservices
+
+data:
+  APP_NAME: "CloudNative Platform"

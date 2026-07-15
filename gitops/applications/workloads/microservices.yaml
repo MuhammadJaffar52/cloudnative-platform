@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+
+metadata:
+  name: microservices
+  namespace: argocd
+
+spec:
+  project: applications
+
+  source:
+    repoURL: https://github.com/MuhammadJaffar52/cloudnative-platform.git
+    targetRevision: HEAD
+    path: kubernetes/overlays/local
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: microservices
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+    syncOptions:
+      - CreateNamespace=true

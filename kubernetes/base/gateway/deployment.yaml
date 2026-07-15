@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+
+  name: gateway
+
+  namespace: microservices
+
+
+spec:
+
+  replicas: 1
+
+
+  selector:
+
+    matchLabels:
+
+      app: gateway
+
+
+  template:
+
+    metadata:
+
+      labels:
+
+        app: gateway
+
+
+    spec:
+
+      containers:
+
+
+      - name: gateway
+
+
+        image: localhost:5001/gateway:1.0
+
+        imagePullPolicy: IfNotPresent
+
+
+        ports:
+
+        - containerPort: 8000
+
+
+
+        envFrom:
+
+        - configMapRef:
+
+            name: gateway-config
+
+
+
+        resources:
+
+
+          requests:
+
+            cpu: "100m"
+
+            memory: "128Mi"
+
+
+          limits:
+
+            cpu: "250m"
+
+            memory: "256Mi"
+
+
+
+        readinessProbe:
+
+          httpGet:
+
+            path: /health
+
+            port: 8000
+
+
+          initialDelaySeconds: 5
+
+          periodSeconds: 10
+
+
+
+        livenessProbe:
+
+          httpGet:
+
+            path: /health
+
+            port: 8000
+
+
+          initialDelaySeconds: 15
+
+          periodSeconds: 20

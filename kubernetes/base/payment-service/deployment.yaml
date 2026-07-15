@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: payment-service
+  namespace: microservices
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: payment-service
+
+  template:
+
+    metadata:
+      labels:
+        app: payment-service
+
+    spec:
+
+      containers:
+
+        - name: payment-service
+
+          image: localhost:5001/payment-service:1.0
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 3004
+
+
+          envFrom:
+
+            - configMapRef:
+                name: payment-service-config
+
+
+          resources:
+
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+
+
+          readinessProbe:
+
+            httpGet:
+              path: /health
+              port: 3004
+
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+
+          livenessProbe:
+
+            httpGet:
+              path: /health
+              port: 3004
+
+            initialDelaySeconds: 15
+            periodSeconds: 20

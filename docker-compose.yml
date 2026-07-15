@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  gateway:
+    build: ./apps/gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - USER_SERVICE_URL=http://user-service:3001
+      - PRODUCT_SERVICE_URL=http://product-service:3002
+      - ORDER_SERVICE_URL=http://order-service:3003
+      - PAYMENT_SERVICE_URL=http://payment-service:3004
+    depends_on:
+      - user-service
+      - product-service
+      - order-service
+      - payment-service
+    networks:
+      - microservices
+
+  user-service:
+    build: ./apps/user-service
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+    networks:
+      - microservices
+
+  product-service:
+    build: ./apps/product-service
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+    networks:
+      - microservices
+
+  order-service:
+    build: ./apps/order-service
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - USER_SERVICE_URL=http://user-service:3001
+      - PRODUCT_SERVICE_URL=http://product-service:3002
+      - PAYMENT_SERVICE_URL=http://payment-service:3004
+    depends_on:
+      - user-service
+      - product-service
+      - payment-service
+    networks:
+      - microservices
+
+  payment-service:
+    build: ./apps/payment-service
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+    networks:
+      - microservices
+
+  frontend:
+    build: ./apps/frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - gateway
+    networks:
+      - microservices
+
+networks:
+  microservices:
+    driver: bridge
