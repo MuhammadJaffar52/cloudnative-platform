@@ -131,11 +131,16 @@ jobs:
 
       # ==========================================
       # Stage 11 - Trivy Docker Image Scan
-      # Scan the built Docker image
+      # Scan the Docker image stored in GHCR
       # ==========================================
       - name: Trivy Docker Image Scan
+        env:
+          IMAGE: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
         run: |
+          echo "Scanning image: $IMAGE"
+
           trivy image \
+            --scanners vuln \
             --severity HIGH,CRITICAL \
             --exit-code 0 \
-            ghcr.io/${{ github.repository_owner }}/frontend:latest
+            "$IMAGE"
