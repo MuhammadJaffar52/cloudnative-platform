@@ -6,16 +6,131 @@ on:
       - main
       - feature/module-13-github-actions
 
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+
 jobs:
   hello:
+    name: Build Frontend
     runs-on: ubuntu-latest
 
     steps:
+
+      # ==========================================
+      # Stage 1 - Source Code Checkout
+      # Download repository to GitHub Runner
+      # ==========================================
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # ==========================================
+      # Stage 2 - Docker Buildx Setup
+      # Enable Docker BuildKit & Buildx
+      # ==========================================
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ==========================================
+      # Stage 3 - Docker Metadata
+      # Generate Docker image tags and OCI labels
+      # ==========================================
+      - name: Extract Docker Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/frontend
+          tags: |
+            type=sha
+            type=raw,value=latest
+
+      # ==========================================
+      # Stage 4 - Runner Verification
+      # Verify GitHub Runner Environment
+      # ==========================================
       - name: Show Repository Files
         run: ls -la
 
       - name: Show Current Directory
         run: pwd
+
+      - name: Show GitHub Workspace
+        run: echo "$GITHUB_WORKSPACE"
+
+      - name: List Workspace Files
+        run: ls -la "$GITHUB_WORKSPACE"
+
+      - name: Show Environment Variables
+        run: env | sort
+
+      # ==========================================
+      # Stage 5 - Docker Metadata Verification
+      # Display generated tags and labels
+      # ==========================================
+      - name: Show Generated Metadata
+        run: |
+          echo "================ TAGS ================"
+          echo "${{ steps.meta.outputs.tags }}"
+          echo
+          echo "=============== LABELS ==============="
+          echo "${{ steps.meta.outputs.labels }}"
+
+         # ==========================================
+      # Stage 6 - Login to GitHub Container Registry
+      # Authenticate to GHCR
+      # ==========================================
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ==========================================
+      # Stage 6 - Docker Image Build
+      # Build frontend image using Buildx
+      # ==========================================
+      - name: Build Frontend Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/frontend
+          file: apps/frontend/Dockerfile
+          push: true
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # ==========================================
+      # Stage 7 - Build Verification
+      # Verify Docker image exists
+      # ==========================================
+      - name: List Docker Images
+        run: docker images
+
+      # ==========================================
+      # Stage 8 - Trivy Filesystem Scan
+      # Scan repository source code, Dockerfile,
+      # dependencies and IaC files
+      # ==========================================
+      - name: Trivy Filesystem Scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: "0"
+
+      # ==========================================
+      # Stage 9 - Trivy Docker Image Scan
+      # Scan the built Docker image
+      # ==========================================
+      - name: Trivy Docker Image Scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: frontend:latest
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: "0"
