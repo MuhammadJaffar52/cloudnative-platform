@@ -1,0 +1,15 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - feature/module-13-github-actions
+
+jobs:
+  hello:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Print Message
+        run: echo "Hello from GitHub Actions!"
