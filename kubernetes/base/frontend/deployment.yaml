@@ -18,9 +18,10 @@ spec:
         app: frontend
 
     spec:
+      serviceAccountName: app-sa
+
       containers:
         - name: frontend
-
           image: localhost:5001/frontend:1.0
           imagePullPolicy: IfNotPresent
 
@@ -35,7 +36,6 @@ spec:
             requests:
               cpu: "100m"
               memory: "128Mi"
-
             limits:
               cpu: "250m"
               memory: "256Mi"
@@ -44,7 +44,6 @@ spec:
             httpGet:
               path: /
               port: 80
-
             initialDelaySeconds: 5
             periodSeconds: 10
 
@@ -52,6 +51,5 @@ spec:
             httpGet:
               path: /
               port: 80
-
             initialDelaySeconds: 15
             periodSeconds: 20

@@ -26,10 +26,12 @@ spec:
 
       labels:
 
-        app: gateway
-
-
+        app: gateway 
+    
     spec:
+      serviceAccountName: app-sa
+
+    
 
       containers:
 

@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - namespace
+  - security
   - frontend
   - gateway
   - user-service

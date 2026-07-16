@@ -1906,3 +1906,139 @@ No. istiod is the control plane. It distributes configuration to Envoy proxies. 
 Where We Go Next
 
 Now that you understand how Pods join the mesh, we move to what makes Istio powerful.
+
+
+Interview Scenario Questions
+Scenario 1
+
+Interviewer:
+
+"One service is down. Where do you start?"
+
+Expected approach:
+
+Check Pod
+kubectl get pods
+Describe Pod
+kubectl describe pod
+Logs
+kubectl logs
+Service
+kubectl get svc
+Endpoints
+kubectl get endpoints
+Prometheus metrics
+Grafana dashboards
+Kiali topology
+Jaeger traces
+Scenario 2
+
+Prometheus is showing no metrics.
+
+How do you troubleshoot?
+
+Answer:
+
+Check Prometheus targets
+Verify ServiceMonitor/PodMonitor (or scrape configs)
+Verify /metrics endpoint
+Check network connectivity
+Check Prometheus logs
+Verify scrape job configuration
+Scenario 3
+
+Kiali shows no traffic.
+
+Possible reasons:
+
+No requests
+Missing sidecar injection
+Metrics missing
+Prometheus unreachable
+Namespace not injected
+Scenario 4
+
+Jaeger shows no traces.
+
+Possible reasons:
+
+No tracing instrumentation or sampling
+No traffic
+Traces not exported
+Collector unavailable
+Istio tracing disabled
+Scenario 5
+
+Grafana dashboards are empty.
+
+Possible reasons:
+
+Wrong datasource
+Prometheus unavailable
+Incorrect query
+Time range too narrow
+Metrics missing
+Scenario 6
+
+A Pod is Running but Ready = False.
+
+What do you check?
+
+Readiness probe
+Application logs
+Health endpoint
+Container port
+Application startup
+Dependency availability
+Scenario 7
+
+Liveness probe keeps restarting the Pod.
+
+Possible causes:
+
+Wrong health endpoint
+Wrong port
+Application crash
+Slow startup
+Misconfigured probe timing
+Scenario 8
+
+One ReplicaSet is healthy while another isn't.
+
+Answer:
+
+During a rolling update, Kubernetes keeps the old ReplicaSet serving traffic until the new ReplicaSet passes readiness checks. If the new ReplicaSet never becomes healthy, Kubernetes does not complete the rollout, preventing downtime.
+
+Scenario 9
+
+istio_requests_total is missing.
+
+How would you investigate?
+
+A structured approach:
+
+Verify sidecar injection.
+Confirm traffic is flowing through Envoy.
+Check Envoy config dump for telemetry filters.
+Verify xDS sync with istiod.
+Check Prometheus scrape targets.
+Inspect Envoy stats endpoint.
+Review Istio telemetry configuration (if used).
+
+This mirrors the investigation you performed in your project.
+
+Scenario 10
+
+How do metrics, logs, and traces complement each other?
+
+A good answer is:
+
+Metrics tell you that there is a problem (e.g., increased latency or error rate).
+Logs help explain what happened by providing detailed events and errors.
+Traces show where the problem occurred by following a request across multiple services.
+
+Together, they let you detect, diagnose, and pinpoint issues in distributed systems.
+
+Most Valuable Skill You Gained
+
+The strongest outcome of this module wasn't installing tools—it was learning a systematic troubleshooting methodology. You practiced moving from symptoms ("no metrics" or "probe failures") to evidence (logs, configuration, runtime state) and then narrowing down the root cause. That's the mindset interviewers look for in DevOps and Platform Engineers.

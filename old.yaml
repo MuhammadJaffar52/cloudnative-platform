@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  annotations:
+    argocd.argoproj.io/tracking-id: microservices:apps/Deployment:microservices/payment-service
+    deployment.kubernetes.io/desired-replicas: "1"
+    deployment.kubernetes.io/max-replicas: "2"
+    deployment.kubernetes.io/revision: "2"
+  creationTimestamp: "2026-07-15T08:47:19Z"
+  generation: 1
+  labels:
+    app: payment-service
+    pod-template-hash: 5ccfdc48f9
+  name: payment-service-5ccfdc48f9
+  namespace: microservices
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: Deployment
+    name: payment-service
+    uid: e52238ec-e529-4ff4-af8b-33ef66961f64
+  resourceVersion: "85277"
+  uid: b8b74823-6067-435b-a98b-0881ef1175c2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+      pod-template-hash: 5ccfdc48f9
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2026-07-15T13:47:19+05:00"
+      creationTimestamp: null
+      labels:
+        app: payment-service
+        pod-template-hash: 5ccfdc48f9
+    spec:
+      containers:
+      - envFrom:
+        - configMapRef:
+            name: payment-service-config
+        image: localhost:5001/payment-service:1.0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 3004
+            scheme: HTTP
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: payment-service
+        ports:
+        - containerPort: 3004
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 3004
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 250m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  availableReplicas: 1
+  fullyLabeledReplicas: 1
+  observedGeneration: 1
+  readyReplicas: 1
+  replicas: 1

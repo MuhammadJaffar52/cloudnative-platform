@@ -16,8 +16,10 @@ spec:
     metadata:
       labels:
         app: product-service
-
+     
     spec:
+      serviceAccountName: app-sa
+    
       containers:
         - name: product-service
 

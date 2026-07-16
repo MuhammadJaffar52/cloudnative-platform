@@ -51,6 +51,8 @@ app.post('/users', (req, res) => {
     name,
     email,
     createdAt: new Date().toISOString()
+
+    
   }
   users.set(user.id, user)
   res.status(201).json(user)
