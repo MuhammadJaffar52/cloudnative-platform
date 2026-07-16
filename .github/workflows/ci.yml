@@ -11,42 +11,61 @@ permissions:
   packages: write
 
 jobs:
-  hello:
-    name: Build Frontend
+  build:
+
+    name: Build ${{ matrix.service }}
+
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        service:
+          - frontend
+          - gateway
+          - user-service
+          - product-service
+          - order-service
+          - payment-service
 
     steps:
 
       # ==========================================
       # Stage 1 - Source Code Checkout
-      # Download repository to GitHub Runner
       # ==========================================
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       # ==========================================
       # Stage 2 - Docker Buildx Setup
-      # Enable Docker BuildKit & Buildx
       # ==========================================
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       # ==========================================
-      # Stage 3 - Docker Metadata
-      # Generate Docker image tags and OCI labels
+      # Stage 3 - Show Matrix Service
+      # ==========================================
+      - name: Show Matrix Service
+        run: |
+          echo "=================================="
+          echo "Building Service: ${{ matrix.service }}"
+          echo "=================================="
+
+      # ==========================================
+      # Stage 4 - Docker Metadata
       # ==========================================
       - name: Extract Docker Metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/frontend
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}
           tags: |
             type=sha
             type=raw,value=latest
 
       # ==========================================
-      # Stage 4 - Runner Verification
-      # Verify GitHub Runner Environment
+      # Stage 5 - Runner Verification
       # ==========================================
       - name: Show Repository Files
         run: ls -la
@@ -64,8 +83,7 @@ jobs:
         run: env | sort
 
       # ==========================================
-      # Stage 5 - Docker Metadata Verification
-      # Display generated tags and labels
+      # Stage 6 - Docker Metadata Verification
       # ==========================================
       - name: Show Generated Metadata
         run: |
@@ -76,8 +94,7 @@ jobs:
           echo "${{ steps.meta.outputs.labels }}"
 
       # ==========================================
-      # Stage 6 - Login to GitHub Container Registry
-      # Authenticate to GHCR
+      # Stage 7 - Login to GitHub Container Registry
       # ==========================================
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -87,28 +104,25 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # ==========================================
-      # Stage 7 - Build & Push Docker Image
-      # Build frontend image and push to GHCR
+      # Stage 8 - Build & Push Docker Image
       # ==========================================
-      - name: Build Frontend Docker Image
+      - name: Build Docker Image
         uses: docker/build-push-action@v6
         with:
-          context: apps/frontend
-          file: apps/frontend/Dockerfile
+          context: apps/${{ matrix.service }}
+          file: apps/${{ matrix.service }}/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
       # ==========================================
-      # Stage 8 - Verify Docker Image
-      # Display local Docker images
+      # Stage 9 - Verify Docker Images
       # ==========================================
       - name: List Docker Images
         run: docker images
 
       # ==========================================
-      # Stage 9 - Install Trivy CLI
-      # Install vulnerability scanner
+      # Stage 10 - Install Trivy CLI
       # ==========================================
       - name: Install Trivy
         run: |
@@ -119,8 +133,7 @@ jobs:
           trivy --version
 
       # ==========================================
-      # Stage 10 - Trivy Filesystem Scan
-      # Scan source code, dependencies and Dockerfile
+      # Stage 11 - Trivy Filesystem Scan
       # ==========================================
       - name: Trivy Filesystem Scan
         run: |
@@ -130,14 +143,13 @@ jobs:
             .
 
       # ==========================================
-      # Stage 11 - Trivy Docker Image Scan
-      # Scan the Docker image stored in GHCR
+      # Stage 12 - Trivy Docker Image Scan
       # ==========================================
       - name: Trivy Docker Image Scan
         env:
           IMAGE: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
         run: |
-          echo "Scanning image: $IMAGE"
+          echo "Scanning Image: $IMAGE"
 
           trivy image \
             --scanners vuln \
