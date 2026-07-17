@@ -1433,3 +1433,405 @@ Earlier we enabled:
 readOnlyRootFilesystem: true
 
 If your application is still running correctly, that's great. If it had failed, the correct production solution would have been to mount writable paths (for example, with emptyDir) rather than simply disabling the setting. Knowing that distinction is useful if someone asks how you'd handle applications that need temporary write access.
+
+
+Module 12 — Scenario-Based Interview Questions
+Part 1 — ServiceAccount
+Scenario 1
+
+Your application needs to read ConfigMaps from Kubernetes, but it cannot access the Kubernetes API.
+
+Questions
+
+Why might this happen?
+How would you verify which ServiceAccount the Pod is using?
+How would you fix it?
+Scenario 2
+
+A Pod is using the default ServiceAccount instead of app-sa.
+
+How do you identify the issue?
+
+What needs to be changed?
+
+Scenario 3
+
+Your manager says:
+
+"Every application should have its own identity."
+
+How would you implement that?
+
+Would you use one shared ServiceAccount or separate ServiceAccounts?
+
+Why?
+
+Scenario 4
+
+A Pod starts successfully but cannot authenticate to the Kubernetes API.
+
+Where would you begin troubleshooting?
+
+Scenario 5
+
+How do you prove that a Pod is using the correct ServiceAccount?
+
+Part 2 — RBAC
+Scenario 6
+
+Your application needs to list Pods but receives:
+
+403 Forbidden
+
+How would you troubleshoot?
+
+Scenario 7
+
+A developer asks for permission to delete Pods.
+
+Would you allow it?
+
+Why or why not?
+
+Scenario 8
+
+Your application can read Pods but cannot read Secrets.
+
+Why?
+
+How do you verify?
+
+Scenario 9
+
+Someone accidentally gives a ServiceAccount cluster-admin.
+
+Why is that dangerous?
+
+Scenario 10
+
+How do you verify RBAC permissions without modifying anything?
+
+Scenario 11
+
+Your Pod suddenly loses access to ConfigMaps after a deployment.
+
+Where would you investigate?
+
+Scenario 12
+
+A Role exists.
+
+A RoleBinding exists.
+
+The ServiceAccount exists.
+
+The application still gets "Forbidden."
+
+Possible causes?
+
+Part 3 — Kubernetes Secrets
+Scenario 13
+
+A developer stores a database password inside a ConfigMap.
+
+Would you approve the change?
+
+Why?
+
+Scenario 14
+
+Your application cannot read:
+
+process.env.DB_PASSWORD
+
+How would you troubleshoot?
+
+Scenario 15
+
+The Secret exists.
+
+The Pod is running.
+
+The environment variable is empty.
+
+Possible causes?
+
+Scenario 16
+
+A Secret was updated.
+
+The application still uses the old value.
+
+Why?
+
+Scenario 17
+
+Someone says:
+
+"Secrets are encrypted."
+
+Is that completely true?
+
+Explain.
+
+Scenario 18
+
+Your company wants all passwords stored in AWS Secrets Manager.
+
+How would Kubernetes consume them?
+
+Scenario 19
+
+A Secret was accidentally committed to GitHub.
+
+What should be done immediately?
+
+Scenario 20
+
+How do you verify that a Secret is actually available inside a running Pod?
+
+Part 4 — Security Context
+Scenario 21
+
+Your security team says:
+
+"Containers must never run as root."
+
+How would you implement this?
+
+Scenario 22
+
+You enabled:
+
+runAsNonRoot: true
+
+Now the Pod won't start.
+
+Why?
+
+Scenario 23
+
+After enabling:
+
+readOnlyRootFilesystem: true
+
+The application crashes.
+
+What could be happening?
+
+How would you troubleshoot?
+
+Scenario 24
+
+How do you verify that a container is running as a non-root user?
+
+Scenario 25
+
+Your Dockerfile contains:
+
+USER root
+
+But your Deployment contains:
+
+runAsNonRoot: true
+
+What happens?
+
+Scenario 26
+
+What is the purpose of:
+
+allowPrivilegeEscalation: false
+
+Can you give a practical example?
+
+Scenario 27
+
+Would you enable readOnlyRootFilesystem for every application?
+
+Why or why not?
+
+Part 5 — Network Policies
+Scenario 28
+
+All Pods can communicate with each other.
+
+Is that secure?
+
+What would you recommend?
+
+Scenario 29
+
+The security team asks you to implement a "default deny" policy.
+
+What does that mean?
+
+Scenario 30
+
+Only the Gateway should communicate with the User Service.
+
+How would you enforce that?
+
+Scenario 31
+
+You applied a NetworkPolicy.
+
+Nothing changed.
+
+Why?
+
+Scenario 32
+
+How do you verify that NetworkPolicies exist in the cluster?
+
+Scenario 33
+
+A Pod cannot communicate with another Pod.
+
+How would you determine whether a NetworkPolicy is responsible?
+
+Scenario 34
+
+What is the difference between:
+
+Ingress policy
+Egress policy
+Scenario 35
+
+Can NetworkPolicies block Internet traffic?
+
+Explain.
+
+Mixed Scenarios
+Scenario 36
+
+An application receives:
+
+403 Forbidden
+
+What would you check first?
+
+ServiceAccount
+RBAC
+Secret
+NetworkPolicy
+
+Explain your reasoning.
+
+Scenario 37
+
+An application starts but cannot access the database password.
+
+Where would you investigate?
+
+Scenario 38
+
+An attacker compromises the User Service.
+
+What security mechanisms in your project help limit the damage?
+
+Scenario 39
+
+A Pod keeps restarting after a security change.
+
+Which features could be responsible?
+
+Scenario 40
+
+Your manager asks:
+
+"How have you secured this Kubernetes platform?"
+
+How would you answer in 2–3 minutes?
+
+Hands-On Troubleshooting
+Scenario 41
+
+Verify that the correct ServiceAccount is attached.
+
+Scenario 42
+
+Verify RBAC permissions.
+
+Scenario 43
+
+Verify the Secret exists.
+
+Scenario 44
+
+Verify the Secret is injected into the container.
+
+Scenario 45
+
+Verify the container is not running as root.
+
+Scenario 46
+
+Verify the NetworkPolicies exist.
+
+Real Production Scenarios
+Scenario 47
+
+A junior developer accidentally grants:
+
+verbs:
+- "*"
+resources:
+- "*"
+
+Would you approve this?
+
+Why?
+
+Scenario 48
+
+A developer hardcodes an API key in the Docker image.
+
+Why is this dangerous?
+
+What would you recommend instead?
+
+Scenario 49
+
+Your security audit finds that every Pod runs as root.
+
+What remediation plan would you propose?
+
+Scenario 50
+
+Your manager asks:
+
+"Which Kubernetes security features have you implemented on this platform?"
+
+How would you summarize your work?
+
+Mini Practical Test (Great for Self-Practice)
+
+Imagine you're given a fresh Kubernetes cluster and asked to secure a new application. Without looking at notes, explain the steps you would take:
+
+Create a dedicated ServiceAccount.
+Grant only the minimum RBAC permissions required.
+Store sensitive values in a Secret instead of a ConfigMap.
+Configure the application to consume the Secret.
+Ensure the container runs as a non-root user with an appropriate securityContext.
+Restrict Pod-to-Pod communication with NetworkPolicies.
+Verify each security control using kubectl commands.
+
+If you can confidently explain and demonstrate these steps, you'll be well prepared for junior DevOps interviews covering Kubernetes security.
+
+Interview Readiness
+
+If I were interviewing for a Junior DevOps Engineer role, the questions I'd consider must-know from this module are:
+
+⭐⭐⭐⭐⭐ ServiceAccount vs RBAC
+⭐⭐⭐⭐⭐ ConfigMap vs Secret
+⭐⭐⭐⭐⭐ How to verify RBAC (kubectl auth can-i)
+⭐⭐⭐⭐⭐ How to verify a Secret inside a Pod
+⭐⭐⭐⭐⭐ Why containers should not run as root
+⭐⭐⭐⭐ How runAsNonRoot works
+⭐⭐⭐⭐ Purpose of allowPrivilegeEscalation
+⭐⭐⭐⭐ Default-deny NetworkPolicy concept
+⭐⭐⭐ How to troubleshoot "403 Forbidden"
+⭐⭐⭐ Basic understanding of NetworkPolicy enforcement (CNI dependency)
+
+These topics are among the most frequently discussed in Kubernetes-focused junior DevOps interviews.
