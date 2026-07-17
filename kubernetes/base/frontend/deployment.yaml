@@ -17,12 +17,13 @@ spec:
       labels:
         app: frontend
 
+
     spec:
       serviceAccountName: app-sa
 
       containers:
         - name: frontend
-          image: localhost:5001/frontend:1.0
+          image:  ghcr.io/muhammadjaffar52/frontend:latest
           imagePullPolicy: IfNotPresent
 
           ports:
