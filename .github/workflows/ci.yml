@@ -82,6 +82,29 @@ jobs:
       - name: Show Environment Variables
         run: env | sort
 
+           # ==========================================
+      # Stage 5A - Repository Variable Verification
+      # Verify GitHub Repository Variables
+      # ==========================================
+      - name: Show Repository Variable
+        run: |
+          echo "Registry = ${{ vars.REGISTRY }}"
+
+      # ==========================================
+      # Stage 5B - Repository Secret Verification
+      # Verify GitHub Repository Secrets
+      # ==========================================
+      - name: Verify Repository Secret
+        env:
+          API_KEY: ${{ secrets.DEMO_API_KEY }}
+        run: |
+          if [ -n "$API_KEY" ]; then
+            echo "✅ Repository Secret Loaded Successfully"
+          else
+            echo "❌ Repository Secret Not Found"
+            exit 1
+          fi
+
       # ==========================================
       # Stage 6 - Docker Metadata Verification
       # ==========================================
@@ -156,3 +179,4 @@ jobs:
             --severity HIGH,CRITICAL \
             --exit-code 0 \
             "$IMAGE"
+
