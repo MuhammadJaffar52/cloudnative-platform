@@ -82,7 +82,7 @@ jobs:
       - name: Show Environment Variables
         run: env | sort
 
-           # ==========================================
+      # ==========================================
       # Stage 5A - Repository Variable Verification
       # Verify GitHub Repository Variables
       # ==========================================
@@ -179,16 +179,16 @@ jobs:
             --severity HIGH,CRITICAL \
             --exit-code 0 \
             "$IMAGE"
-# ==========================================
-# Stage 13 - Build & Push Approved Image
-# Only publish after successful scans
-# ==========================================
+
+      # ==========================================
+      # Stage 13 - Build & Push Approved Image
+      # Only publish after successful scans
+      # ==========================================
       - name: Build and Push Approved Image
         uses: docker/build-push-action@v6
         with:
-        context: apps/${{ matrix.service }}
-        file: apps/${{ matrix.service }}/Dockerfile
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-     
+          context: apps/${{ matrix.service }}
+          file: apps/${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
