@@ -7,7 +7,7 @@ on:
       - feature/module-13-github-actions
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
