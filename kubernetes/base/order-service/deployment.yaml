@@ -22,7 +22,8 @@ spec:
 
       containers:
         - name: order-service
-          image: localhost:5001/order-service:1.0
+          image: ghcr.io/muhammadjaffar52/order-service:latest
+
           imagePullPolicy: IfNotPresent
 
           ports:

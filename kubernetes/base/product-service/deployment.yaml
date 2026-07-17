@@ -23,7 +23,7 @@ spec:
       containers:
         - name: product-service
 
-          image: localhost:5001/product-service:1.0
+          image: ghcr.io/muhammadjaffar52/product-service:latest
           imagePullPolicy: IfNotPresent
 
           ports:
