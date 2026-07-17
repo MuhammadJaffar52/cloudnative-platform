@@ -22,7 +22,8 @@ spec:
 
       containers:
         - name: user-service
-          image: localhost:5001/user-service:1.0
+          image: ghcr.io/muhammadjaffar52/user-service:latest
+
           imagePullPolicy: IfNotPresent
 
           env:
