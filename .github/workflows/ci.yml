@@ -5,17 +5,47 @@ on:
     branches:
       - main
       - feature/module-13-github-actions
+    paths-ignore:
+      - "kubernetes/**"
 
 permissions:
   contents: write
   packages: write
 
 jobs:
+
+  # ==========================================
+  # Job 1 - Compute Image Tag (single source of truth)
+  # Computed once so build + update-manifests always
+  # agree on the exact same tag — no recomputation,
+  # no possibility of drift between them.
+  # ==========================================
+  vars:
+    name: Compute Image Tag
+    runs-on: ubuntu-latest
+    outputs:
+      sha_tag: ${{ steps.tag.outputs.tag }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Compute Short SHA Tag
+        id: tag
+        run: |
+          SHORT_SHA=$(git rev-parse --short=7 HEAD)
+          echo "tag=sha-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "Computed image tag: sha-${SHORT_SHA}"
+
+  # ==========================================
+  # Job 2 - Build, Scan, Push
+  # ==========================================
   build:
 
     name: Build ${{ matrix.service }}
 
     runs-on: ubuntu-latest
+    needs: vars
 
     strategy:
       fail-fast: false
@@ -50,10 +80,13 @@ jobs:
         run: |
           echo "=================================="
           echo "Building Service: ${{ matrix.service }}"
+          echo "Using Tag: ${{ needs.vars.outputs.sha_tag }}"
           echo "=================================="
 
       # ==========================================
       # Stage 4 - Docker Metadata
+      # Tags are driven by the single sha_tag computed
+      # in the vars job — not recomputed here.
       # ==========================================
       - name: Extract Docker Metadata
         id: meta
@@ -61,7 +94,7 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}
           tags: |
-            type=sha
+            type=raw,value=${{ needs.vars.outputs.sha_tag }}
             type=raw,value=latest
 
       # ==========================================
@@ -192,3 +225,81 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  # ==========================================
+  # Job 3 - Update Kubernetes Manifests (CD trigger for ArgoCD)
+  # Runs once, after ALL matrix builds succeed.
+  # Uses the exact same sha_tag from the vars job —
+  # guaranteed to match what was pushed to GHCR.
+  # ==========================================
+  update-manifests:
+    name: Update Kubernetes Manifests
+    runs-on: ubuntu-latest
+    needs:
+      - vars
+      - build
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      # ==========================================
+      # Stage 1 - Update Image Tags in Deployment Manifests
+      # Regex matches the image line regardless of the
+      # previous registry (localhost:5001, ghcr.io, etc.)
+      # or previous tag (1.0, latest, sha-xxxxxxx, ...).
+      # ==========================================
+      - name: Update Deployment Image Tags
+        env:
+          NEW_TAG: ${{ needs.vars.outputs.sha_tag }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+
+          declare -A SERVICES=(
+            [frontend]="kubernetes/base/frontend/deployment.yaml"
+            [gateway]="kubernetes/base/gateway/deployment.yaml"
+            [user-service]="kubernetes/base/user-service/deployment.yaml"
+            [product-service]="kubernetes/base/product-service/deployment.yaml"
+            [order-service]="kubernetes/base/order-service/deployment.yaml"
+            [payment-service]="kubernetes/base/payment-service/deployment.yaml"
+          )
+
+          for service in "${!SERVICES[@]}"; do
+            file="${SERVICES[$service]}"
+            echo "Updating ${file} -> ghcr.io/${OWNER}/${service}:${NEW_TAG}"
+
+            sed -i -E \
+              "s#image:.*${service}:.*#image: ghcr.io/${OWNER}/${service}:${NEW_TAG}#" \
+              "$file"
+          done
+
+      # ==========================================
+      # Stage 2 - Show Diff
+      # ==========================================
+      - name: Show Manifest Changes
+        run: git diff --color=always kubernetes/base/
+
+      # ==========================================
+      # Stage 3 - Commit and Push Updated Manifests
+      # Note: paths-ignore on kubernetes/** at the top
+      # of this workflow prevents this push from
+      # re-triggering the pipeline.
+      # ==========================================
+      - name: Commit and Push Changes
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet kubernetes/base/; then
+            echo "No manifest changes to commit."
+            exit 0
+          fi
+
+          git add kubernetes/base/
+          git commit -m "ci: update image tags to ${{ needs.vars.outputs.sha_tag }}"
+          git push origin HEAD:${{ github.ref_name }}
