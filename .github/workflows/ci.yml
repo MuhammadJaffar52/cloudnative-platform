@@ -15,27 +15,33 @@ permissions:
 jobs:
 
   # ==========================================
-  # Job 1 - Compute Image Tag (single source of truth)
+  # Job 1 - Compute Shared Variables (single source of truth)
   # Computed once so build + update-manifests always
-  # agree on the exact same tag — no recomputation,
-  # no possibility of drift between them.
+  # agree on the exact same tag and owner name —
+  # no recomputation, no possibility of drift.
   # ==========================================
   vars:
-    name: Compute Image Tag
+    name: Compute Image Tag and Owner
     runs-on: ubuntu-latest
     outputs:
-      sha_tag: ${{ steps.tag.outputs.tag }}
+      sha_tag: ${{ steps.vars.outputs.tag }}
+      owner: ${{ steps.vars.outputs.owner }}
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Compute Short SHA Tag
-        id: tag
+      - name: Compute Variables
+        id: vars
         run: |
           SHORT_SHA=$(git rev-parse --short=7 HEAD)
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+
           echo "tag=sha-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "owner=${OWNER}" >> "$GITHUB_OUTPUT"
+
           echo "Computed image tag: sha-${SHORT_SHA}"
+          echo "Computed owner (lowercase): ${OWNER}"
 
   # ==========================================
   # Job 2 - Build, Scan, Push
@@ -81,18 +87,20 @@ jobs:
           echo "=================================="
           echo "Building Service: ${{ matrix.service }}"
           echo "Using Tag: ${{ needs.vars.outputs.sha_tag }}"
+          echo "Using Owner: ${{ needs.vars.outputs.owner }}"
           echo "=================================="
 
       # ==========================================
       # Stage 4 - Docker Metadata
-      # Tags are driven by the single sha_tag computed
-      # in the vars job — not recomputed here.
+      # Tags and owner are driven by the vars job —
+      # not recomputed here. Owner is lowercase to
+      # comply with GHCR's naming rules.
       # ==========================================
       - name: Extract Docker Metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}
+          images: ghcr.io/${{ needs.vars.outputs.owner }}/${{ matrix.service }}
           tags: |
             type=raw,value=${{ needs.vars.outputs.sha_tag }}
             type=raw,value=latest
@@ -229,8 +237,8 @@ jobs:
   # ==========================================
   # Job 3 - Update Kubernetes Manifests (CD trigger for ArgoCD)
   # Runs once, after ALL matrix builds succeed.
-  # Uses the exact same sha_tag from the vars job —
-  # guaranteed to match what was pushed to GHCR.
+  # Uses the exact same sha_tag and owner from the
+  # vars job — guaranteed to match what was pushed to GHCR.
   # ==========================================
   update-manifests:
     name: Update Kubernetes Manifests
@@ -250,11 +258,13 @@ jobs:
       # Regex matches the image line regardless of the
       # previous registry (localhost:5001, ghcr.io, etc.)
       # or previous tag (1.0, latest, sha-xxxxxxx, ...).
+      # Owner is always lowercase here too, so the
+      # committed manifests never flip back to uppercase.
       # ==========================================
       - name: Update Deployment Image Tags
         env:
           NEW_TAG: ${{ needs.vars.outputs.sha_tag }}
-          OWNER: ${{ github.repository_owner }}
+          OWNER: ${{ needs.vars.outputs.owner }}
         run: |
           set -euo pipefail
 
