@@ -39,7 +39,7 @@ spec:
       - name: gateway
 
 
-        image: ghcr.io/muhammadjaffar52/gateway:sha-05f641f
+        image: ghcr.io/muhammadjaffar52/gateway:sha-e512e2b
 
         imagePullPolicy: IfNotPresent
 

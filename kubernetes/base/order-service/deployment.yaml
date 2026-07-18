@@ -22,7 +22,7 @@ spec:
 
       containers:
         - name: order-service
-          image: ghcr.io/muhammadjaffar52/order-service:sha-05f641f
+          image: ghcr.io/muhammadjaffar52/order-service:sha-e512e2b
 
           imagePullPolicy: IfNotPresent
 
