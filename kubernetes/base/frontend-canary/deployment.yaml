@@ -2,31 +2,30 @@ apiVersion: apps/v1
 kind: Deployment
 
 metadata:
-  name: frontend
+  name: frontend-canary
   namespace: microservices
 
 spec:
-  replicas: 4
+  replicas: 1
 
   selector:
     matchLabels:
       app: frontend
 
-      version: stable
+      version: canary
 
   template:
     metadata:
       labels:
         app: frontend
-        version: stable
+        version: canary
 
     spec:
       serviceAccountName: app-sa
 
       containers:
         - name: frontend
-          image: ghcr.io/muhammadjaffar52/frontend:sha-05f641f
-
+          image: ghcr.io/muhammadjaffar52/frontend:sha-d229b54
           imagePullPolicy: IfNotPresent
 
           ports:

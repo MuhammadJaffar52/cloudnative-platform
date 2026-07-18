@@ -5,8 +5,10 @@ resources:
   - namespace
   - security
   - frontend
+  - frontend-canary
   - gateway
   - user-service
   - product-service
   - order-service
   - payment-service
+  - istio

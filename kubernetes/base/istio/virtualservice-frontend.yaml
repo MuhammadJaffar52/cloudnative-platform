@@ -1,0 +1,22 @@
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+
+metadata:
+  name: frontend
+  namespace: microservices
+
+spec:
+  hosts:
+    - frontend
+
+  http:
+    - route:
+        - destination:
+            host: frontend
+            subset: stable
+          weight: 90
+
+        - destination:
+            host: frontend
+            subset: canary
+          weight: 10
