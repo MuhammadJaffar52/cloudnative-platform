@@ -23,7 +23,7 @@ spec:
 
       containers:
         - name: frontend
-          image: ghcr.io/MuhammadJaffar52/frontend:sha-d229b54
+          image: ghcr.io/muhammadjaffar52/frontend:sha-05f641f
           imagePullPolicy: IfNotPresent
 
           ports:
