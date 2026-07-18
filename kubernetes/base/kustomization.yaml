@@ -12,4 +12,4 @@ resources:
   - order-service
   - payment-service
   - istio
-  - gateway.yaml
+  
