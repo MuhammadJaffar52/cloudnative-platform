@@ -2306,3 +2306,249 @@ One VirtualService
 Version labels
 
 Everything else in your platform—GitHub Actions, GHCR, Argo CD, Services, Ingress Gateway, and your CI/CD pipeline—stays exactly as it is.
+Module 14 Interview Questions (Progressive Delivery)
+Section 1 — Basic Understanding
+Q1. What happens when you push code to your GitHub repository?
+
+Answer:
+
+In my project, GitHub Actions automatically starts the CI pipeline. It builds Docker images, runs Trivy filesystem and image scans, pushes the images to GHCR, updates the Kubernetes deployment manifests with the new immutable SHA tag, commits those changes back to Git, and Argo CD detects the Git change and synchronizes it to the Kubernetes cluster. That triggers Kubernetes to perform a Rolling Update.
+
+Q2. Why do we update Kubernetes YAML instead of running kubectl apply?
+
+Answer:
+
+Because I'm following GitOps. Git is the single source of truth. If I manually run kubectl apply, the cluster and Git can drift apart. By updating Git, Argo CD keeps everything synchronized automatically.
+
+Q3. Why don't you use the latest image tag?
+
+Answer:
+
+latest isn't predictable. If something breaks, I don't know exactly which version is running. I use immutable SHA tags so every deployment points to one specific image, making rollbacks and debugging much easier.
+
+Section 2 — Rolling Update
+Q4. Explain Rolling Update in simple words.
+
+Answer:
+
+Instead of replacing all Pods at once, Kubernetes replaces them gradually. It creates new Pods first, waits until they're Ready, and only then removes the old Pods. That allows users to continue using the application during deployment.
+
+Q5. How does Kubernetes know when to delete the old Pod?
+
+Answer:
+
+It waits until the new Pod passes the Readiness Probe. Only after the Pod becomes Ready does Kubernetes remove one of the old Pods.
+
+Q6. Why is the Readiness Probe important?
+
+Answer:
+
+Without it, Kubernetes may send traffic to a Pod that has started but isn't actually ready to serve requests yet. That can cause user errors during deployment.
+
+Q7. Difference between Readiness and Liveness Probe?
+
+Answer:
+
+Readiness decides if the Pod should receive traffic. Liveness decides whether the container is healthy enough to keep running. If Liveness fails repeatedly, Kubernetes restarts the container.
+
+Q8. What creates Pods?
+
+Answer:
+
+The Deployment creates a ReplicaSet, and the ReplicaSet creates the Pods.
+
+Deployment → ReplicaSet → Pods
+
+Q9. Why are old ReplicaSets kept?
+
+Answer:
+
+They store deployment history. If a new version fails, Kubernetes can roll back to the previous ReplicaSet quickly.
+
+Section 3 — Rollback
+Q10. What is Rollback?
+
+Answer:
+
+Rollback means returning the application to a previously working version when the current deployment has problems.
+
+Q11. When would you perform a rollback?
+
+Answer:
+
+If users start reporting errors, monitoring shows failures, or the new deployment has a critical bug, I'd roll back immediately to restore service while the team investigates.
+
+Q12. Does rollback rebuild Docker images?
+
+Answer:
+
+No. It simply redeploys a previously known-good version that already exists.
+
+Section 4 — Canary Deployment
+Q13. What is Canary Deployment?
+
+Answer:
+
+Instead of sending all traffic to a new version, I send only a small percentage—say 10%—to the new version while the remaining 90% continues using the stable version. If everything looks healthy, I gradually increase traffic.
+
+Q14. Why is Canary safer than Rolling Update?
+
+Answer:
+
+Rolling Update eventually moves everyone to the new version. Canary exposes only a small group of users first. If there's a problem, only a small percentage is affected.
+
+Q15. Why can't Kubernetes Deployments perform Canary by themselves?
+
+Answer:
+
+Deployments manage Pods, not traffic. Kubernetes doesn't know how to send 90% of requests to one version and 10% to another. That's why we use a service mesh like Istio.
+
+Q16. What does Istio add?
+
+Answer:
+
+Istio controls network traffic. It allows me to decide exactly how requests are distributed between different application versions.
+
+Q17. Why did you create two Deployments?
+
+Answer:
+
+One Deployment runs the stable version with four replicas. The other runs the canary version with one replica. Both are behind the same Service, and Istio controls which version receives traffic.
+
+Q18. Why do both Deployments have the same app label?
+
+Answer:
+
+Because the Service should discover both sets of Pods. The version label is then used by Istio to separate them into different subsets.
+
+Q19. Why add the version label?
+
+Answer:
+
+Without it, Istio wouldn't know which Pods are stable and which are canary.
+
+Q20. What is a DestinationRule?
+
+Answer:
+
+A DestinationRule defines logical groups, called subsets, for a Service. In my project, I created two subsets: stable and canary, based on the version label.
+
+Q21. What is a VirtualService?
+
+Answer:
+
+A VirtualService defines how traffic is routed. I configured it to send 90% of traffic to the stable subset and 10% to the canary subset.
+
+Q22. Why isn't the Service enough?
+
+Answer:
+
+A Kubernetes Service performs load balancing across all matching Pods equally. It can't say "90% to stable and 10% to canary." Istio's VirtualService provides that capability.
+
+Section 5 — GitOps
+Q23. What happens after GitHub Actions updates the manifests?
+
+Answer:
+
+Argo CD detects the Git change, compares the desired state in Git with the live cluster, and synchronizes the cluster automatically.
+
+Q24. Why did your push fail earlier?
+
+Answer:
+
+GitHub Actions had already committed updated image tags, so my local branch was behind. Git rejected the push because the remote contained newer commits.
+
+Q25. How did you fix it?
+
+Answer:
+
+I used git pull --rebase, resolved the merge conflict, kept the latest image tag, completed the rebase, and pushed again.
+
+Q26. Why not use git push --force?
+
+Answer:
+
+Force pushing can overwrite valid commits from the CI pipeline or teammates. In GitOps, it's much safer to rebase and preserve history.
+
+Section 6 — Troubleshooting
+Q27. Users say they are getting errors after deployment. What do you check first?
+
+Answer:
+
+I first check whether the deployment completed successfully, then verify Pod health, ReplicaSets, Events, Readiness Probes, container logs, and finally Argo CD synchronization status.
+
+Q28. Canary Pods are running but receive no traffic. What would you check?
+
+Answer:
+
+I'd verify the Pod labels, DestinationRule subsets, VirtualService routes and weights, and confirm that the traffic is passing through the Istio proxy.
+
+Q29. Argo CD says OutOfSync. What does that mean?
+
+Answer:
+
+It means the cluster doesn't match what's stored in Git. Either someone changed the cluster manually or Git contains changes that haven't been synchronized yet.
+
+Q30. What would you check if traffic isn't splitting 90/10?
+
+Answer:
+
+I'd verify that both stable and canary Pods exist, the labels match the DestinationRule, the VirtualService references the correct subsets, and that traffic is actually flowing through Istio.
+
+Section 7 — Scenario Questions
+Q31. Your canary deployment has a bug affecting 10% of users. What do you do?
+
+Answer:
+
+I would immediately change the VirtualService to send 100% of traffic back to the stable version. Since both versions are already running, the switch is almost instant and doesn't require redeployment.
+
+Q32. Management wants to expose only internal employees to the new version. How would you approach it?
+
+Answer:
+
+Instead of routing by percentage, Istio can route based on request headers, cookies, or user identity. That allows only selected users to reach the canary version.
+
+Q33. Why not simply increase replicas from four to five?
+
+Answer:
+
+Adding replicas doesn't create a new application version. Canary requires two different versions running simultaneously so traffic can be split between them.
+
+Q34. Why did you keep the same Service?
+
+Answer:
+
+The Service provides a single stable endpoint for clients. Istio sits behind that Service and decides which version actually receives each request.
+
+Q35. If your interviewer asked, "What part of this module taught you the most?" what would you say?
+
+Answer:
+
+The biggest lesson was understanding that Kubernetes manages application lifecycle, while Istio manages network traffic. Before this module I thought Deployments handled everything, but now I understand that progressive delivery depends on combining Kubernetes, Istio, GitOps, and CI/CD. That changed how I think about production deployments.
+
+One-liner flow to remember
+Developer Push
+      ↓
+GitHub Actions
+      ↓
+Build + Trivy
+      ↓
+Push Image to GHCR
+      ↓
+Update Git Manifests
+      ↓
+Argo CD Sync
+      ↓
+Kubernetes Deployments
+      ↓
+Stable Pods + Canary Pods
+      ↓
+Service
+      ↓
+Istio DestinationRule (stable/canary subsets)
+      ↓
+Istio VirtualService (90% / 10%)
+      ↓
+Users
+
+If you're comfortable answering these 35 questions naturally, you'll be well prepared for junior and many mid-level DevOps interviews covering Kubernetes deployments, GitOps, and progressive delivery.
