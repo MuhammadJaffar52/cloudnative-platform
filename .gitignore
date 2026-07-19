@@ -1,37 +1,33 @@
-# ==========================
+# Node
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
 # Terraform
-# ==========================
-**/.terraform/
+.terraform/
 *.tfstate
 *.tfstate.*
-crash.log
-override.tf
-override.tf.json
-*_override.tf
-*_override.tf.json
 
-# Keep lock file (recommended for teams)
-# !.terraform.lock.hcl
+# Build output
+dist/
+build/
 
-# ==========================
-# IDE
-# ==========================
-.vscode/
-.idea/
+# Archives
+*.tar.gz
+*.zip
 
-# ==========================
-# Logs
-# ==========================
-*.log
+# Binaries
+istio-*/
+velero-*/
 
-# ==========================
-# Environment Variables
-# ==========================
-.env
-.env.*
-
-# ==========================
-# Operating System
-# ==========================
-.DS_Store
-Thumbs.db

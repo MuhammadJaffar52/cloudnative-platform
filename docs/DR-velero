@@ -1,0 +1,400 @@
+Module 15 – Disaster Recovery (Velero)
+Objective
+
+Implement Kubernetes Disaster Recovery (DR) using Velero to:
+
+Backup Kubernetes resources
+Store backups inside LocalStack (S3)
+Restore deleted applications
+Simulate namespace deletion
+Verify successful recovery
+
+This gives our Cloud Native Platform a production-like Disaster Recovery mechanism.
+
+Architecture
+                 Kubernetes Cluster
+                (Kind Cluster)
+
+        +------------------------------+
+        |                              |
+        |  Namespace: microservices    |
+        |                              |
+        | Deployments                  |
+        | Services                     |
+        | ConfigMaps                   |
+        | Secrets                      |
+        | Network Policies             |
+        | Istio Resources              |
+        | RBAC                         |
+        | Service Accounts             |
+        +--------------+---------------+
+                       |
+                       |
+                Velero Backup
+                       |
+                       |
+        +--------------v--------------+
+        |        Velero Server        |
+        |                              |
+        | Backup Controller            |
+        | Restore Controller           |
+        +--------------+---------------+
+                       |
+                S3 API (AWS Plugin)
+                       |
+                       |
+        +--------------v--------------+
+        |      LocalStack S3          |
+        |                              |
+        | Bucket: velero-backups       |
+        +--------------+---------------+
+                       |
+             Backup Files Stored
+Components Used
+Component	Purpose
+Kind	Kubernetes Cluster
+Velero	Backup & Restore
+AWS Plugin	S3 Integration
+LocalStack	Local AWS Services
+S3 Bucket	Backup Storage
+Disaster Recovery Flow
+Deploy Application
+
+        ↓
+
+Velero Backup
+
+        ↓
+
+Store Backup into LocalStack S3
+
+        ↓
+
+Application Deleted
+
+        ↓
+
+Namespace Deleted
+
+        ↓
+
+Velero Restore
+
+        ↓
+
+Namespace Recreated
+
+        ↓
+
+Deployments Restored
+
+        ↓
+
+Pods Running Again
+
+        ↓
+
+Application Available
+Installation Verification
+
+Check Velero Pods
+
+kubectl get pods -n velero
+
+Expected
+
+velero
+node-agent
+
+Check Backup Storage
+
+velero backup-location get
+
+Expected
+
+Available
+
+Check Backup Storage Location
+
+kubectl get backupstoragelocation -n velero
+
+Describe Backup Storage
+
+kubectl describe backupstoragelocation default -n velero
+Create Backup
+
+Backup only our project namespace
+
+velero backup create microservices-backup \
+  --include-namespaces microservices
+
+Wait for Completion
+
+velero backup get
+
+Expected
+
+STATUS
+Completed
+
+Detailed Backup Information
+
+velero backup describe microservices-backup --details
+
+Shows
+
+Resources backed up
+Number of objects
+Start time
+Completion time
+Included namespaces
+Deployments
+Services
+Secrets
+ConfigMaps
+Istio resources
+RBAC
+etc.
+
+In your project:
+
+145 Kubernetes resources
+Backup completed successfully
+No hook failures
+Backup stored successfully
+
+View Backup Logs
+
+velero backup logs microservices-backup
+
+List All Backups
+
+velero backup get
+
+Verify Backup in LocalStack
+
+List Bucket
+
+aws --endpoint-url=http://localhost:4566 s3 ls
+
+List Backup Files
+
+aws --endpoint-url=http://localhost:4566 \
+s3 ls s3://velero-backups --recursive
+
+Expected files
+
+velero-backup.json
+
+backup.tar.gz
+
+logs.gz
+
+resource-list.json.gz
+
+results.gz
+
+This proves the backup is physically stored in the S3 bucket.
+
+Verify Existing Application
+
+Before Disaster
+
+kubectl get all -n microservices
+
+Everything should be Running.
+
+Disaster Simulation
+
+Delete Entire Namespace
+
+kubectl delete namespace microservices
+
+Wait
+
+kubectl get ns
+
+Namespace disappears.
+
+Verify Resources Gone
+
+kubectl get all -n microservices
+
+Expected
+
+Namespace not found
+Restore
+
+Restore Backup
+
+velero restore create \
+--from-backup microservices-backup
+
+Watch Restore
+
+velero restore get
+
+Expected
+
+Completed
+
+Detailed Restore
+
+velero restore describe restore-xxxxx --details
+
+Restore Logs
+
+velero restore logs restore-xxxxx
+Verify Recovery
+
+Namespace
+
+kubectl get ns
+
+Pods
+
+kubectl get pods -n microservices
+
+Deployments
+
+kubectl get deployments -n microservices
+
+Services
+
+kubectl get svc -n microservices
+
+ConfigMaps
+
+kubectl get configmap -n microservices
+
+Secrets
+
+kubectl get secrets -n microservices
+
+Istio Resources
+
+kubectl get virtualservice,destinationrule,gateway -n microservices
+
+Network Policies
+
+kubectl get networkpolicy -n microservices
+
+RBAC
+
+kubectl get role,rolebinding -n microservices
+
+Service Accounts
+
+kubectl get sa -n microservices
+
+Everything should be restored exactly as before.
+
+What Was Restored?
+
+Your backup successfully restored:
+
+Namespace
+Deployments
+ReplicaSets
+Pods
+Services
+ConfigMaps
+Secrets
+ServiceAccounts
+Roles
+RoleBindings
+NetworkPolicies
+Istio Gateway
+Istio VirtualService
+Istio DestinationRule
+Telemetry Resources
+Endpoints
+EndpointSlices
+
+Total resources restored:
+
+145 Kubernetes objects
+
+Production DR Workflow
+Production Cluster
+
+↓
+
+Velero Scheduled Backup
+
+↓
+
+S3 Bucket
+
+↓
+
+Disaster Happens
+
+↓
+
+New Cluster Created
+
+↓
+
+Install Velero
+
+↓
+
+Connect Same S3 Bucket
+
+↓
+
+Restore Backup
+
+↓
+
+Application Running Again
+Commands Cheat Sheet
+kubectl get pods -n velero
+
+velero backup-location get
+
+velero backup get
+
+velero backup describe microservices-backup --details
+
+velero backup logs microservices-backup
+
+aws --endpoint-url=http://localhost:4566 s3 ls
+
+aws --endpoint-url=http://localhost:4566 s3 ls s3://velero-backups --recursive
+
+kubectl get all -n microservices
+
+kubectl delete namespace microservices
+
+velero restore create --from-backup microservices-backup
+
+velero restore get
+
+velero restore describe <restore-name> --details
+
+velero restore logs <restore-name>
+
+kubectl get all -n microservices
+Key Learning Outcomes
+Understood Disaster Recovery (DR) concepts for Kubernetes.
+Installed and configured Velero with the AWS plugin.
+Used LocalStack as an S3-compatible backup target.
+Created namespace-scoped backups.
+Verified backup storage in an S3 bucket.
+Simulated a real disaster by deleting the entire application namespace.
+Restored the application from backup.
+Validated recovery of Kubernetes resources and Istio configuration.
+Learned a production-style backup and restore workflow suitable for cloud environments.
+✅ Module Status
+
+Module 15 – Disaster Recovery with Velero: Completed Successfully
+
+The next modules in your roadmap are:
+
+Module 16 – Horizontal Pod Autoscaler (HPA)
+Module 17 – Vertical Pod Autoscaler (VPA)
+Module 18 – HashiCorp Vault + External Secrets Operator (optional, after HPA/VPA)
+
+This order is sensible because HPA and VPA build directly on your existing microservices deployment before adding enterprise-grade secrets management.
