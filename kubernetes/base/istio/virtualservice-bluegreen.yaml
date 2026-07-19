@@ -17,9 +17,9 @@ spec:
         - destination:
             host: frontend
             subset: blue
-          weight: 100
+          weight: 0
 
         - destination:
             host: frontend
             subset: green
-          weight: 0
+          weight: 100

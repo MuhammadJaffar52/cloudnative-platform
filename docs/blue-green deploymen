@@ -456,3 +456,662 @@ Only one version receives production traffic at a time.
 Traffic switching and rollback are accomplished by updating the VirtualService, not by recreating Pods or Deployments.
 
 This mental model is essential. Once it's clear, the YAML we'll write tomorrow will feel straightforward because you'll understand why each resource exists, not just how to configure it.
+
+# Module 14 — Blue-Green Deployment using Kubernetes + Istio
+
+## Objective
+
+The goal of this module was to implement a production-style **Blue-Green Deployment** strategy on our Cloud Native Platform without affecting the already working application.
+
+Instead of replacing the existing frontend deployment, we introduced two additional deployments (Blue and Green) and allowed Istio to decide which version receives traffic.
+
+---
+
+# What is Blue-Green Deployment?
+
+Blue-Green Deployment is a release strategy where **two identical environments** run simultaneously.
+
+* **Blue** → Current production version
+* **Green** → New version
+
+Users continue using Blue until Green is fully tested.
+
+When Green is verified, traffic is switched instantly from Blue to Green.
+
+Unlike Rolling Updates, Kubernetes never replaces Pods gradually.
+
+Both environments stay alive together.
+
+---
+
+# Why Blue-Green?
+
+Advantages
+
+* Zero downtime
+* Instant rollback
+* Safe production releases
+* Easy testing
+* Both versions run simultaneously
+
+---
+
+# Real Production Flow
+
+```
+Users
+   │
+   ▼
+Istio Gateway
+   │
+VirtualService
+   │
+   ├────────► Blue Deployment
+   │
+   └────────► Green Deployment
+```
+
+Initially
+
+```
+Blue = 100%
+Green = 0%
+```
+
+After validation
+
+```
+Blue = 0%
+Green = 100%
+```
+
+Rollback
+
+```
+Blue = 100%
+Green = 0%
+```
+
+No Pods are recreated during the switch.
+
+Only traffic changes.
+
+---
+
+# Existing Project Before This Module
+
+Already available
+
+```
+Frontend
+Gateway
+User Service
+Product Service
+Order Service
+Payment Service
+
+Istio
+
+Canary Deployment
+Rolling Updates
+```
+
+Nothing was removed.
+
+Blue-Green was added as an additional deployment strategy.
+
+---
+
+# Folder Structure After This Module
+
+```
+kubernetes/
+└── base/
+
+    frontend/
+        deployment.yaml
+        service.yaml
+        configmap.yaml
+        kustomization.yaml
+
+    frontend-blue/
+        deployment.yaml
+        kustomization.yaml
+
+    frontend-green/
+        deployment.yaml
+        kustomization.yaml
+
+    frontend-canary/
+        deployment.yaml
+        kustomization.yaml
+
+    gateway/
+
+    user-service/
+    product-service/
+    order-service/
+    payment-service/
+
+    istio/
+        gateway.yaml
+
+        destinationrule-canary.yaml
+        virtualservice-canary.yaml
+
+        destinationrule-bluegreen.yaml
+        virtualservice-bluegreen.yaml
+
+        telemetry.yaml
+
+    security/
+```
+
+---
+
+# Files Added
+
+## New Folder
+
+```
+frontend-blue/
+```
+
+Contains
+
+```
+deployment.yaml
+kustomization.yaml
+```
+
+---
+
+## New Folder
+
+```
+frontend-green/
+```
+
+Contains
+
+```
+deployment.yaml
+kustomization.yaml
+```
+
+---
+
+## New Istio Files
+
+```
+destinationrule-bluegreen.yaml
+
+virtualservice-bluegreen.yaml
+```
+
+---
+
+# Files Modified
+
+## base/kustomization.yaml
+
+Before
+
+```
+frontend
+frontend-canary
+gateway
+...
+```
+
+After
+
+```
+frontend
+frontend-blue
+frontend-green
+frontend-canary
+
+gateway
+...
+```
+
+This allows ArgoCD and Kustomize to deploy Blue and Green automatically.
+
+---
+
+## istio/kustomization.yaml
+
+Added
+
+```
+destinationrule-bluegreen.yaml
+
+virtualservice-bluegreen.yaml
+```
+
+---
+
+# Frontend Service
+
+The existing Service was NOT modified.
+
+```
+selector:
+  app: frontend
+```
+
+This selector matches
+
+```
+Stable
+
+Blue
+
+Green
+
+Canary
+```
+
+Therefore one Kubernetes Service can expose every deployment.
+
+Istio later filters traffic using subsets.
+
+---
+
+# Blue Deployment
+
+Created by copying the stable frontend deployment.
+
+Changes made
+
+Deployment name
+
+```
+frontend-blue
+```
+
+Version label
+
+```
+version: blue
+```
+
+Everything else remained identical.
+
+---
+
+# Green Deployment
+
+Created by copying the stable deployment.
+
+Changes
+
+Deployment name
+
+```
+frontend-green
+```
+
+Version label
+
+```
+version: green
+```
+
+Everything else remained identical.
+
+---
+
+# DestinationRule
+
+Created
+
+```
+destinationrule-bluegreen.yaml
+```
+
+Purpose
+
+Defines subsets.
+
+```
+Blue
+Green
+```
+
+Istio maps
+
+```
+version: blue
+
+version: green
+```
+
+to
+
+```
+subset: blue
+
+subset: green
+```
+
+---
+
+# VirtualService
+
+Created
+
+```
+virtualservice-bluegreen.yaml
+```
+
+Initially
+
+```
+Blue
+
+100%
+```
+
+```
+Green
+
+0%
+```
+
+Meaning
+
+All traffic goes to Blue.
+
+Green receives nothing.
+
+Traffic can later be switched instantly.
+
+---
+
+# Kubernetes Objects Created
+
+Deployments
+
+```
+frontend
+frontend-blue
+frontend-green
+frontend-canary
+```
+
+Services
+
+```
+frontend
+```
+
+DestinationRules
+
+```
+frontend
+frontend-bluegreen
+```
+
+VirtualServices
+
+```
+frontend
+frontend-bluegreen
+```
+
+Gateway
+
+```
+frontend-gateway
+```
+
+---
+
+# Verification Performed
+
+Deployments
+
+```
+kubectl get deployments
+```
+
+Pods
+
+```
+kubectl get pods
+```
+
+Labels
+
+```
+kubectl get pods -l app=frontend --show-labels
+```
+
+Service
+
+```
+kubectl get svc frontend
+```
+
+Endpoints
+
+```
+kubectl get endpoints frontend
+```
+
+Gateway
+
+```
+kubectl get gateway -n microservices
+```
+
+DestinationRule
+
+```
+kubectl get destinationrule
+```
+
+VirtualService
+
+```
+kubectl get virtualservice
+```
+
+Rollout
+
+```
+kubectl rollout status deployment/frontend-blue
+
+kubectl rollout status deployment/frontend-green
+```
+
+Istio
+
+```
+istioctl proxy-config routes deploy/frontend-blue
+```
+
+Everything was successfully deployed.
+
+---
+
+# Important Design Decision
+
+The original frontend deployment was intentionally kept.
+
+Reason
+
+Rolling Update demonstrations still require
+
+```
+frontend/deployment.yaml
+```
+
+Removing it would have broken the previous learning module.
+
+Therefore the project now contains
+
+```
+Stable
+
+Blue
+
+Green
+
+Canary
+```
+
+simultaneously.
+
+This makes the repository useful for learning every deployment strategy independently.
+
+---
+
+# Deployment Strategies Covered So Far
+
+## 1. Recreate Deployment
+
+Old Pods
+
+↓
+
+Deleted
+
+↓
+
+New Pods Created
+
+Downtime
+
+```
+YES
+```
+
+Production Usage
+
+```
+Rare
+```
+
+---
+
+## 2. Rolling Update
+
+Old Pods
+
+↓
+
+Gradually replaced
+
+↓
+
+New Pods
+
+Downtime
+
+```
+No
+```
+
+Rollback
+
+```
+Automatic
+```
+
+Used by Kubernetes Deployment by default.
+
+---
+
+## 3. Canary Deployment
+
+Two application versions run together.
+
+Example
+
+```
+Stable 90%
+
+Canary 10%
+```
+
+Small percentage of users test the new version first.
+
+If successful
+
+```
+10%
+
+25%
+
+50%
+
+100%
+```
+
+Rollback is achieved by reducing the canary weight.
+
+---
+
+## 4. Blue-Green Deployment
+
+Both complete environments exist simultaneously.
+
+```
+Blue
+
+Green
+```
+
+Traffic moves instantly.
+
+```
+Blue 100%
+
+↓
+
+Green 100%
+```
+
+Rollback is immediate by switching traffic back.
+
+---
+
+# Comparison of Deployment Strategies
+
+| Strategy       | Downtime | Two Versions Running | Gradual Traffic Shift | Instant Rollback | Typical Use Case                                       |
+| -------------- | -------- | -------------------- | --------------------- | ---------------- | ------------------------------------------------------ |
+| Recreate       | Yes      | No                   | No                    | No               | Simple internal applications                           |
+| Rolling Update | No       | Temporarily          | No                    | Moderate         | Default Kubernetes deployment                          |
+| Canary         | No       | Yes                  | Yes                   | Yes              | Validate new releases with a small percentage of users |
+| Blue-Green     | No       | Yes                  | No (instant switch)   | Yes              | Production systems requiring fast rollback             |
+
+---
+
+# Production Perspective
+
+Large organizations commonly use:
+
+* Rolling Updates for regular application upgrades.
+* Canary Deployments to validate risky changes with a small audience.
+* Blue-Green Deployments for major releases where an immediate rollback is critical.
+
+The strategy is chosen based on the application's risk, user impact, and operational requirements rather than one approach replacing all others.
+
+---
+
+# Module Outcome
+
+After completing this module, the Cloud Native Platform now supports:
+
+* Kubernetes Rolling Updates
+* Istio Canary Deployment
+* Istio Blue-Green Deployment
+* GitOps deployment through ArgoCD
+* Progressive Delivery concepts
+* Instant traffic switching using Istio VirtualService
+* Multiple frontend versions running simultaneously for learning and experimentation
+
+This completes the Progressive Delivery section of the project and provides a strong foundation for production-grade release strategies.
