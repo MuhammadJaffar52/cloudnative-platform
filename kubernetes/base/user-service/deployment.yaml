@@ -22,7 +22,7 @@ spec:
 
       containers:
         - name: user-service
-          image: ghcr.io/muhammadjaffar52/user-service:sha-39f6700
+          image: ghcr.io/muhammadjaffar52/user-service:sha-dcae96a
 
           imagePullPolicy: IfNotPresent
 
