@@ -1,0 +1,25 @@
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+
+metadata:
+  name: frontend-bluegreen
+  namespace: microservices
+
+spec:
+  hosts:
+    - "*"
+
+  gateways:
+    - frontend-gateway
+
+  http:
+    - route:
+        - destination:
+            host: frontend
+            subset: blue
+          weight: 100
+
+        - destination:
+            host: frontend
+            subset: green
+          weight: 0

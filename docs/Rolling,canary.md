@@ -2552,3 +2552,246 @@ Istio VirtualService (90% / 10%)
 Users
 
 If you're comfortable answering these 35 questions naturally, you'll be well prepared for junior and many mid-level DevOps interviews covering Kubernetes deployments, GitOps, and progressive delivery.
+
+
+
+
+verify canary deployment
+kubectl get pods -n microservices -l app=frontend -o wide
+1. Verify Pods
+
+Ensure both Stable and Canary pods are running.
+
+kubectl get pods -n microservices -l app=frontend -o wide
+
+Expected:
+
+frontend-xxxxx                  Running
+frontend-xxxxx                  Running
+frontend-canary-xxxxx           Running
+2. Verify Labels
+
+Istio routes using labels.
+
+kubectl get pods -n microservices --show-labels | grep frontend
+
+Verify you have
+
+version=stable
+
+and
+
+version=canary
+3. Verify Deployment
+
+Stable deployment
+
+kubectl get deployment frontend -n microservices
+
+Canary deployment
+
+kubectl get deployment frontend-canary -n microservices
+4. Verify Service
+kubectl get svc frontend -n microservices
+
+Should point to
+
+ClusterIP
+Port 80
+5. Verify Endpoints
+
+This proves Service discovered all pods.
+
+kubectl get endpoints frontend -n microservices
+
+Expected
+
+10.x.x.x:80
+10.x.x.x:80
+10.x.x.x:80
+...
+
+including the canary pod.
+
+6. Verify VirtualService
+kubectl get virtualservice frontend -n microservices
+
+Detailed
+
+kubectl get virtualservice frontend -n microservices -o yaml
+
+Verify
+
+stable
+canary
+
+weight:
+- 90
+- 10
+
+(or whatever weights you configured)
+
+7. Verify DestinationRule
+kubectl get destinationrule frontend -n microservices
+
+Detailed
+
+kubectl get destinationrule frontend -n microservices -o yaml
+
+Should contain
+
+stable
+canary
+
+subsets.
+
+8. Verify Gateway
+kubectl get gateway -n microservices
+9. Verify Istio Configuration
+istioctl analyze
+
+Should return
+
+✔ No validation issues found
+10. Verify Ingress Gateway knows Frontend
+istioctl proxy-config clusters deploy/istio-ingressgateway -n istio-system | grep frontend
+
+Expected
+
+frontend.microservices.svc.cluster.local
+stable
+canary
+
+This proves Istio loaded both subsets.
+
+11. Verify Traffic
+
+Run multiple requests
+
+for i in {1..30}
+do
+curl -s http://172.18.0.3:30603/
+done
+
+or
+
+for i in {1..30}
+do
+curl -H "Host: frontend.local" http://172.18.0.3:30603/
+done
+
+depending on your Gateway host.
+
+12. Watch Istio Logs
+kubectl logs -n istio-system deploy/istio-ingressgateway -f
+
+You should see requests reaching
+
+stable
+
+and
+
+canary
+
+For example:
+
+outbound|80|stable|frontend.microservices.svc.cluster.local
+
+outbound|80|canary|frontend.microservices.svc.cluster.local
+
+This is the strongest proof that traffic is being split.
+
+13. Verify with Kiali (Best Visualization)
+
+Open
+
+istioctl dashboard kiali
+
+or
+
+http://localhost:20001
+
+Then
+
+Graph
+↓
+
+Namespace
+
+↓
+
+microservices
+
+↓
+
+Traffic
+
+You should visually see
+
+Ingress Gateway
+          │
+          ▼
+      frontend
+       /     \
+      /       \
+ Stable     Canary
+ 90%          10%
+14. Verify Metrics
+istioctl dashboard prometheus
+
+or
+
+istioctl dashboard grafana
+
+Traffic graphs should show requests on both subsets.
+
+15. Verify No Errors
+kubectl get events -n microservices --sort-by=.metadata.creationTimestamp
+
+Look for
+
+Failed
+CrashLoopBackOff
+ImagePullBackOff
+Unhealthy
+
+There should be none.
+
+16. Verify Rollout
+kubectl rollout status deployment/frontend -n microservices
+kubectl rollout status deployment/frontend-canary -n microservices
+
+Should report
+
+successfully rolled out
+17. Verify Ready Endpoints
+kubectl describe svc frontend -n microservices
+
+Ensure endpoints exist and correspond to the frontend pods.
+
+18. Verify Sidecar Injection
+kubectl get pods -n microservices
+
+READY should be
+
+2/2
+
+meaning
+
+Application Container
++
+Istio Sidecar
+Final Success Criteria ✅
+
+Your canary deployment is considered fully working when all of the following are true:
+
+✅ Stable pods are Running.
+✅ Canary pod is Running.
+✅ Service has endpoints for both versions.
+✅ VirtualService contains traffic weights (e.g. 90/10).
+✅ DestinationRule defines stable and canary subsets.
+✅ Istio Ingress Gateway has loaded both subsets (istioctl proxy-config clusters).
+✅ Ingress Gateway logs show requests routed to both stable and canary.
+✅ istioctl analyze reports no configuration issues.
+✅ Kiali graph shows traffic splitting between the two versions.
+✅ No pod crashes, image pull failures, or unhealthy events.

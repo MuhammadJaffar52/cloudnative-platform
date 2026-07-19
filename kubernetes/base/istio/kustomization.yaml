@@ -3,5 +3,8 @@ kind: Kustomization
 
 resources:
   - gateway.yaml
-  - destinationrule-frontend.yaml
-  - virtualservice-frontend.yaml
+  - destinationrule-canary.yaml
+  - virtualservice-canary.yaml
+  - destinationrule-bluegreen.yaml
+  - virtualservice-bluegreen.yaml 
+  - telemetry.yaml

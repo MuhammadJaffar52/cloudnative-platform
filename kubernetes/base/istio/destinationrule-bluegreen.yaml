@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+
+metadata:
+  name: frontend-bluegreen
+  namespace: microservices
+
+spec:
+  host: frontend
+
+  subsets:
+
+    - name: blue
+      labels:
+        version: blue
+
+    - name: green
+      labels:
+        version: green

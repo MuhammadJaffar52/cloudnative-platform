@@ -4,12 +4,16 @@ kind: Kustomization
 resources:
   - namespace
   - security
+
   - frontend
+  - frontend-blue
+  - frontend-green
   - frontend-canary
+
   - gateway
   - user-service
   - product-service
   - order-service
   - payment-service
+
   - istio
-  

@@ -10,3 +10,4 @@ resources:
   - secrets/app-secret.yaml
   - network-policies/default-deny.yaml
   - network-policies/gateway-to-user.yaml
+  - network-policies/istio-ingress-to-frontend.yaml

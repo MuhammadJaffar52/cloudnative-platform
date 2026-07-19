@@ -1,0 +1,458 @@
+Blue-Green Deployment Architecture
+
+Before looking at the architecture, remember one important rule:
+
+In Blue-Green Deployment, both versions of the application are running at the same time, but users access only one version.
+
+This is the biggest difference from a Rolling Update.
+
+Complete Architecture
+                    Internet / Users
+                           │
+                           ▼
+                  Istio Ingress Gateway
+                           │
+                           ▼
+                    VirtualService
+                           │
+                  Route to "blue" subset
+                           │
+                           ▼
+                   DestinationRule
+                  ┌─────────┴─────────┐
+                  │                   │
+             Blue Subset         Green Subset
+           version=blue        version=green
+                  │                   │
+                  ▼                   ▼
+         frontend-blue Pods    frontend-green Pods
+                  │                   │
+                  └─────────┬─────────┘
+                            │
+                            ▼
+                  frontend Service (ClusterIP)
+Let's Understand Every Component
+1. User
+
+The user opens your website.
+
+For example:
+
+http://myapp.com
+
+The user has no idea whether Blue or Green is serving the request.
+
+2. Istio Gateway
+
+The request first reaches the Istio Ingress Gateway.
+
+Think of it as the main entrance to your Kubernetes cluster.
+
+Internet
+
+↓
+
+Istio Gateway
+
+The Gateway's job is simple:
+
+Accept external traffic
+Forward it to the VirtualService
+
+It does not decide which version gets traffic.
+
+3. VirtualService
+
+This is the brain of Blue-Green Deployment.
+
+It contains the routing rules.
+
+Initially it says:
+
+100%
+
+↓
+
+Blue
+
+So every request goes to Blue.
+
+Tomorrow, when we switch versions, we won't touch the Deployments.
+
+We'll only change this rule to:
+
+100%
+
+↓
+
+Green
+
+That single change redirects all user traffic.
+
+4. DestinationRule
+
+Now VirtualService says:
+
+Send traffic to Blue.
+
+But Kubernetes doesn't know what "Blue" means.
+
+DestinationRule defines the subsets.
+
+Example:
+
+subsets:
+- name: blue
+  labels:
+    version: blue
+
+- name: green
+  labels:
+    version: green
+
+This tells Istio:
+
+Blue subset
+
+=
+
+Pods with
+
+version=blue
+
+and
+
+Green subset
+
+=
+
+Pods with
+
+version=green
+5. Blue Deployment
+
+Example:
+
+frontend-blue
+
+Pods:
+
+frontend-blue-abc123
+
+version=blue
+
+This version is currently serving users.
+
+6. Green Deployment
+
+Example:
+
+frontend-green
+
+Pods:
+
+frontend-green-def456
+
+version=green
+
+These Pods are already running and healthy.
+
+But no production traffic reaches them yet.
+
+Think of Green as being on standby.
+
+7. Kubernetes Service
+
+Many people get confused here.
+
+There is only one Service.
+
+frontend
+
+Its selector is:
+
+selector:
+  app: frontend
+
+Notice something important.
+
+It does not include:
+
+version: blue
+
+or
+
+version: green
+
+Why?
+
+Because the Service should include both Blue and Green Pods.
+
+Istio will decide which subset receives traffic.
+
+If the Service selected only version=blue, then Green Pods would never be reachable.
+
+Complete Request Flow
+
+Let's follow a real request.
+
+Step 1
+
+User opens:
+
+myapp.com
+
+↓
+
+Step 2
+
+Gateway accepts the request.
+
+User
+
+↓
+
+Gateway
+
+↓
+
+Step 3
+
+Gateway sends the request to VirtualService.
+
+Gateway
+
+↓
+
+VirtualService
+
+↓
+
+Step 4
+
+VirtualService checks its routing rule.
+
+Destination:
+
+Blue
+
+↓
+
+Step 5
+
+DestinationRule translates:
+
+Blue
+
+=
+
+version=blue
+
+↓
+
+Step 6
+
+Istio selects only Pods having
+
+version=blue
+
+↓
+
+Step 7
+
+Blue Pod processes the request.
+
+↓
+
+Step 8
+
+Response returns to the user.
+
+Blue Pod
+
+↓
+
+Gateway
+
+↓
+
+User
+
+Everything happens in milliseconds.
+
+Internal Working
+
+Now let's see what happens when you deploy a new version.
+
+Phase 1 — Current Production
+
+Blue is live.
+
+Blue Pods
+
+Running
+
+Healthy
+
+Receiving 100% traffic
+
+Green does not exist yet (or is from an older release).
+
+Phase 2 — Deploy New Version
+
+Create Green.
+
+frontend-green
+
+Now Kubernetes starts:
+
+Scheduling
+
+↓
+
+Pull Image
+
+↓
+
+Create Container
+
+↓
+
+Start Container
+
+↓
+
+Readiness Probe
+
+↓
+
+Healthy
+
+Notice something important:
+
+Users are still using Blue.
+
+No one is affected.
+
+Phase 3 — Verify Green
+
+Before switching traffic, you can verify Green by checking:
+
+Pods are Running
+Readiness Probe passes
+Logs look normal
+Metrics are healthy
+Internal test requests succeed
+
+Because Green is already running, you can test it without impacting users.
+
+Phase 4 — Switch Traffic
+
+This is the key moment.
+
+You do not:
+
+Restart Pods
+Delete Blue
+Scale Blue down
+Create a new ReplicaSet
+
+Instead, you change one routing rule:
+
+Before
+
+route:
+- destination:
+    subset: blue
+
+After
+
+route:
+- destination:
+    subset: green
+
+As soon as Istio receives the updated VirtualService, it pushes the new routing configuration to the Envoy proxies.
+
+The next incoming request is sent to Green.
+
+This is why the switch is effectively instantaneous.
+
+Phase 5 — Rollback (if needed)
+
+Suppose users report a bug immediately after the switch.
+
+Do you need to redeploy?
+
+No.
+
+Do you need to recreate Pods?
+
+No.
+
+You simply update the VirtualService back to:
+
+subset: blue
+
+Traffic immediately returns to Blue because those Pods never stopped running.
+
+Why Blue-Green Rollback Is So Fast
+
+The old environment is still alive.
+
+Blue
+
+✓ Running
+
+✓ Healthy
+
+✓ Ready
+
+Green is also running.
+
+Only the traffic path changes.
+
+That's why rollback often takes seconds, not minutes.
+
+Internal Working Summary
+Deploy Blue
+      │
+      ▼
+Blue serves users
+      │
+      ▼
+Deploy Green
+      │
+      ▼
+Green becomes Ready
+      │
+      ▼
+Test Green
+      │
+      ▼
+Change VirtualService
+      │
+      ▼
+100% Traffic → Green
+      │
+      ▼
+Issue Found?
+      │
+ ┌────┴────┐
+ │         │
+No        Yes
+ │         │
+ ▼         ▼
+Keep     Change VirtualService
+Green    back to Blue
+What you've learned so far
+
+At this point, you should clearly understand:
+
+Gateway accepts external traffic.
+VirtualService decides which version receives traffic.
+DestinationRule maps logical subsets (blue/green) to Pod labels.
+Both Blue and Green Pods run simultaneously.
+Only one version receives production traffic at a time.
+Traffic switching and rollback are accomplished by updating the VirtualService, not by recreating Pods or Deployments.
+
+This mental model is essential. Once it's clear, the YAML we'll write tomorrow will feel straightforward because you'll understand why each resource exists, not just how to configure it.
