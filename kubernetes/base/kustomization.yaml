@@ -15,5 +15,5 @@ resources:
   - product-service
   - order-service
   - payment-service
-
+  - postgres
   - istio
