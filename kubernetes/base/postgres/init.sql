@@ -1,10 +1,4 @@
--- ==========================================================
--- Cloud Native Platform Database Initialization
--- ==========================================================
 
-CREATE DATABASE cloudnative_platform;
-
-\connect cloudnative_platform;
 
 -- ==========================================================
 -- USERS TABLE

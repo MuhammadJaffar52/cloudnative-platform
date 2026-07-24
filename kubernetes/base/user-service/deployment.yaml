@@ -1,63 +1,59 @@
 apiVersion: apps/v1
 kind: Deployment
-
 metadata:
   name: user-service
   namespace: microservices
-
 spec:
   replicas: 1
-
   selector:
     matchLabels:
       app: user-service
-
   template:
     metadata:
       labels:
         app: user-service
-
     spec:
       serviceAccountName: app-sa
-
       containers:
         - name: user-service
-          image: ghcr.io/muhammadjaffar52/user-service:sha-f348d63
+          image: ghcr.io/muhammadjaffar52/user-service:sha-f57c2e4
 
           imagePullPolicy: IfNotPresent
-
           env:
-            - name: DB_USERNAME
+            - name: DB_HOST
+              value: postgres-headless
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
               valueFrom:
                 secretKeyRef:
-                  name: app-secret
-                  key: DB_USERNAME
-
+                  name: postgres-secret
+                  key: POSTGRES_DB
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: app-secret
-                  key: DB_PASSWORD
-
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: app-secret
                   key: JWT_SECRET
-
             - name: API_KEY
               valueFrom:
                 secretKeyRef:
                   name: app-secret
                   key: API_KEY
-
           envFrom:
             - configMapRef:
                 name: user-service-config
-
           ports:
             - containerPort: 3001
-
           resources:
             requests:
               cpu: "100m"
@@ -65,14 +61,12 @@ spec:
             limits:
               cpu: "250m"
               memory: "256Mi"
-
           readinessProbe:
             httpGet:
               path: /health
               port: 3001
             initialDelaySeconds: 5
             periodSeconds: 10
-
           livenessProbe:
             httpGet:
               path: /health
