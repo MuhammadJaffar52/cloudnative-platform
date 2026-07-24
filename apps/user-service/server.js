@@ -1,25 +1,10 @@
-import express from 'express'
+import express from "express";
+import pool from "./db.js";
 
 const app = express()
 const PORT = process.env.PORT || 3001
 
 app.use(express.json())
-
-// In-memory data store
-const users = new Map()
-let userIdCounter = 1
-
-// Initialize with sample users
-function initUsers() {
-  const sampleUsers = [
-    { id: userIdCounter++, name: 'John Doe', email: 'john@example.com', createdAt: new Date().toISOString() },
-    { id: userIdCounter++, name: 'Jane Smith', email: 'jane@example.com', createdAt: new Date().toISOString() },
-    { id: userIdCounter++, name: 'Bob Wilson', email: 'bob@example.com', createdAt: new Date().toISOString() }
-  ]
-  sampleUsers.forEach(user => users.set(user.id, user))
-}
-
-initUsers()
 
 // Health check
 app.get('/health', (req, res) => {
@@ -27,9 +12,20 @@ app.get('/health', (req, res) => {
 })
 
 // Get all users
-app.get('/users', (req, res) => {
-  res.json(Array.from(users.values()))
-})
+app.get("/users", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM users ORDER BY id"
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: "Database error",
+    });
+  }
+});
 
 // Get user by ID
 app.get('/users/:id', (req, res) => {
@@ -51,8 +47,6 @@ app.post('/users', (req, res) => {
     name,
     email,
     createdAt: new Date().toISOString()
-
-    
   }
   users.set(user.id, user)
   res.status(201).json(user)
