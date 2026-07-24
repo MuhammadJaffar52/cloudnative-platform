@@ -23,7 +23,7 @@ spec:
       containers:
         - name: product-service
 
-          image: ghcr.io/muhammadjaffar52/product-service:sha-f348d63
+          image: ghcr.io/muhammadjaffar52/product-service:sha-09bf05d
           imagePullPolicy: IfNotPresent
 
           ports:
