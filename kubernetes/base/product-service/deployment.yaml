@@ -16,6 +16,8 @@ spec:
     metadata:
       labels:
         app: product-service
+      annotations:
+        traffic.sidecar.istio.io/excludeOutboundPorts: "5432"
      
     spec:
       serviceAccountName: app-sa

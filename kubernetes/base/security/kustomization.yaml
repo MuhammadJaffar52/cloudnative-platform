@@ -11,3 +11,4 @@ resources:
   - network-policies/default-deny.yaml
   - network-policies/gateway-to-user.yaml
   - network-policies/istio-ingress-to-frontend.yaml
+  - network-policies/allow-services-to-postgres.yaml

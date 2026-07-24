@@ -1,0 +1,10 @@
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: postgres-tcp
+  namespace: microservices
+spec:
+  host: postgres-headless.microservices.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: DISABLE

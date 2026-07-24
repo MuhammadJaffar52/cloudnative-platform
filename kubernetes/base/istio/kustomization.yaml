@@ -8,3 +8,5 @@ resources:
   - destinationrule-bluegreen.yaml
   - virtualservice-bluegreen.yaml 
   - telemetry.yaml
+  - serviceentry-postgres.yaml
+  - destinationrule-postgres.yaml
