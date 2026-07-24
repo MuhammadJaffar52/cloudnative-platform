@@ -16,7 +16,7 @@ spec:
       serviceAccountName: app-sa
       containers:
         - name: user-service
-          image: ghcr.io/muhammadjaffar52/user-service:latest
+          image: ghcr.io/muhammadjaffar52/user-service:sha-592c6ed
 
           imagePullPolicy: IfNotPresent
           env:
