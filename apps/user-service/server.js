@@ -6,76 +6,79 @@ const PORT = process.env.PORT || 3001
 
 app.use(express.json())
 
-// Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', service: 'user-service', timestamp: new Date().toISOString() })
 })
 
-// Get all users
 app.get("/users", async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM users ORDER BY id"
-    );
-
+    const result = await pool.query("SELECT * FROM users ORDER BY id");
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({
-      error: "Database error",
-    });
+    res.status(500).json({ error: "Database Error" });
   }
 });
 
-// Get user by ID
-app.get('/users/:id', (req, res) => {
-  const user = users.get(parseInt(req.params.id))
-  if (!user) {
-    return res.status(404).json({ error: 'User not found' })
+app.get("/users/:id", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM users WHERE id=$1", [req.params.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database Error" });
   }
-  res.json(user)
-})
+});
 
-// Create user
-app.post('/users', (req, res) => {
-  const { name, email } = req.body
+app.post("/users", async (req, res) => {
+  const { name, email } = req.body;
   if (!name || !email) {
-    return res.status(400).json({ error: 'Name and email are required' })
+    return res.status(400).json({ error: "Name and email are required" });
   }
-  const user = {
-    id: userIdCounter++,
-    name,
-    email,
-    createdAt: new Date().toISOString()
+  try {
+    const result = await pool.query(
+      `INSERT INTO users(name,email) VALUES($1,$2) RETURNING *`,
+      [name, email]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database Error" });
   }
-  users.set(user.id, user)
-  res.status(201).json(user)
-})
+});
 
-// Update user
-app.put('/users/:id', (req, res) => {
-  const id = parseInt(req.params.id)
-  const user = users.get(id)
-  if (!user) {
-    return res.status(404).json({ error: 'User not found' })
+app.put("/users/:id", async (req, res) => {
+  const { name, email } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE users SET name=$1, email=$2 WHERE id=$3 RETURNING *`,
+      [name, email, req.params.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database Error" });
   }
-  const { name, email } = req.body
-  if (name) user.name = name
-  if (email) user.email = email
-  user.updatedAt = new Date().toISOString()
-  users.set(id, user)
-  res.json(user)
-})
+});
 
-// Delete user
-app.delete('/users/:id', (req, res) => {
-  const id = parseInt(req.params.id)
-  if (!users.has(id)) {
-    return res.status(404).json({ error: 'User not found' })
+app.delete("/users/:id", async (req, res) => {
+  try {
+    const result = await pool.query("DELETE FROM users WHERE id=$1 RETURNING *", [req.params.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.status(204).send();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database Error" });
   }
-  users.delete(id)
-  res.status(204).send()
-})
+});
 
 app.listen(PORT, () => {
   console.log(`User service listening on port ${PORT}`)
