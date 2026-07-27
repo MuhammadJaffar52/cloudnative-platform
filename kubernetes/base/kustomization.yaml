@@ -6,9 +6,9 @@ resources:
   - security
 
   - frontend
-  - frontend-blue
-  - frontend-green
-  - frontend-canary
+  # - frontend-blue
+  # - frontend-green
+  # - frontend-canary
 
   - gateway
   - user-service
