@@ -4,7 +4,7 @@ Objective
 The objective of this module is to introduce Terraform as the Infrastructure as Code (IaC) tool for our CloudNative Platform. Instead of manually creating cloud resources, we define them in code so they can be created, updated, and deleted automatically.
 
 In this module, Terraform provisions infrastructure against LocalStack, allowing us to build and test AWS infrastructure locally before migrating to real AWS.
-
+ghjghjkghjk
 Why Terraform?
 
 Before Terraform:
