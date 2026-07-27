@@ -24,7 +24,7 @@ spec:
 
       containers:
         - name: frontend
-          image: ghcr.io/muhammadjaffar52/frontend:sha-291b158
+          image: ghcr.io/muhammadjaffar52/frontend:sha-70fc008
 
           imagePullPolicy: IfNotPresent
 
