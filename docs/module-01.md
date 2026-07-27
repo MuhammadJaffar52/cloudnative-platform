@@ -18,7 +18,7 @@ The goal was to install and verify every required tool before creating infrastru
 
 Every platform engineer requires a reliable development environment.
 
-Without a consistent environment:
+Without a consistent environment:ghshdcjs
 
 - Automation becomes unreliable
 - Builds become inconsistent
