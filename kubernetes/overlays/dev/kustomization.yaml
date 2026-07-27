@@ -11,19 +11,19 @@ images:
     newTag: sha-291b158
 
   - name: ghcr.io/muhammadjaffar52/gateway
-    newTag: sha-291b158
+    newTag: sha-feecb48
 
   - name: ghcr.io/muhammadjaffar52/user-service
     newTag: sha-291b158
 
   - name: ghcr.io/muhammadjaffar52/product-service
-    newTag: sha-291b158
+    newTag: sha-feecb48
 
   - name: ghcr.io/muhammadjaffar52/order-service
     newTag: sha-291b158
 
   - name: ghcr.io/muhammadjaffar52/payment-service
-    newTag: sha-291b158
+    newTag: sha-feecb48
 
 replicas:
   - name: frontend
