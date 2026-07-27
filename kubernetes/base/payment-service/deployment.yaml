@@ -30,7 +30,7 @@ spec:
 
         - name: payment-service
 
-          image: ghcr.io/muhammadjaffar52/payment-service:sha-70fc008
+          image: ghcr.io/muhammadjaffar52/payment-service:sha-8ffcc92
           imagePullPolicy: IfNotPresent
 
           ports:
