@@ -5,7 +5,9 @@ resources:
   - namespace
   - security
 
-   - frontend
+  - frontend
+
+
   # - frontend-blue
   # - frontend-green
   # - frontend-canary
